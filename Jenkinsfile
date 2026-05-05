@@ -38,13 +38,14 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                // Code analysis pampistundi
-                withSonarQubeEnv("${env.SONAR_SERVER_NAME}") {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App -Dsonar.login=squ_ac8a0550cf5a0a5810597ebec174617d5a4e24c8'
-                }
-            }
+    steps {
+        // Direct ga Jenkins System Config lo unna name ikkada ivvandi
+        withSonarQubeEnv('SonarQube') {
+            sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App'
         }
+    }
+}
+
 
         stage('Docker Build & Push') {
             steps {
