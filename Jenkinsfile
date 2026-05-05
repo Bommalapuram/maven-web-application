@@ -1,87 +1,88 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'   // Jenkins Tools lo meeru icchina Maven name
+        jdk 'Java21'    // Jenkins Tools lo meeru icchina JDK name
+    }
+
     environment {
         // SonarQube Details
-        SONAR_SERVER_NAME = 'SonarQube' // Jenkins System Configuration lo nuvvu icchina Name idi
+        SONAR_SERVER_NAME = 'SonarQube' 
         
         // DockerHub Details
         DOCKER_HUB_USER = 'devpractice1'
         DOCKER_IMAGE_NAME = 'devpractice1/maven-web-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         
-        // GitHub Repo
-        GIT_REPO_URL = 'https://github.com'
+        // GitHub Repo (Updated with correct path)
+        GIT_REPO_URL = 'https://github.com/Bommalapuram/maven-web-application.git'
     }
 
     stages {
-        stage('Checkout') {
+       stage('Checkout') {
             steps {
-                // GitHub credentials use chesi code pull chestundi
+                // Correct way to pull code
                 git branch: 'master', 
                     credentialsId: 'git-cred', 
-                    url: "${GIT_REPO_URL}"
+                    url: 'https://github.com/Bommalapuram/maven-web-application.git'
             }
         }
 
+
         stage('Maven Build') {
             steps {
-                // War file create chestundi
+                // War file build chestundi
                 sh 'mvn clean package'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                // SonarQube server ki code analysis pampistundi
-                withSonarQubeEnv("${SONAR_SERVER_NAME}") {
+                // Code analysis pampistundi
+                withSonarQubeEnv("${env.SONAR_SERVER_NAME}") {
                     sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App -Dsonar.login=squ_ac8a0550cf5a0a5810597ebec174617d5a4e24c8'
                 }
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Push') {
             steps {
-                // Docker image build chestundi
-                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${DOCKER_IMAGE_NAME}:latest"
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                // DockerHub ki image push chestundi
                 script {
+                    // DockerHub Login mariyu Push
                     withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                        sh "docker build -t ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG} ."
+                        sh "docker tag ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG} ${env.DOCKER_IMAGE_NAME}:latest"
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}"
+                        sh "docker push ${env.DOCKER_IMAGE_NAME}:latest"
                     }
                 }
             }
         }
 
+        // Kubernetes setup tarvata ee stage uncomment cheyyandi
+        /*
         stage('K8s Deployment (EKS)') {
             steps {
                 script {
-                    // Deployment file lo image name ni update chestundi
-                    sh "sed -i 's|IMAGE_NAME|${DOCKER_IMAGE_NAME}:${DOCKER_TAG}|g' deployment.yaml"
-                    
-                    // Kubernetes ki deploy chestundi (Jenkins server lo kubeconfig setup undali)
+                    sh "sed -i 's|IMAGE_NAME|${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}|g' deployment.yaml"
                     sh "kubectl apply -f deployment.yaml"
-                    sh "kubectl apply -f service.yaml"
                 }
             }
         }
+        */
     }
 
     post {
+        always {
+            echo "Build Finished."
+        }
         success {
-            echo "Successfully Deployed to EKS!"
-            // Ikada SNS trigger add cheyyochu
+            echo "Application ready for Deployment!"
         }
         failure {
-            echo "Pipeline Failed. Please check logs."
+            echo "Pipeline Failed. Check logs for details."
         }
     }
 }
