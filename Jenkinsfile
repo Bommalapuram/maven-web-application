@@ -39,12 +39,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
     steps {
-        // Direct ga Jenkins System Config lo unna name ikkada ivvandi
+        // Direct ga single quotes lo SonarQube ani ivvandi (screenshot lo unna same name)
         withSonarQubeEnv('SonarQube') {
             sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App'
         }
     }
 }
+
 
 
         stage('Docker Build & Push') {
