@@ -36,16 +36,15 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+       stage('OWASP Security Scan') {
     steps {
-        // Direct ga 'MySonar' ane name use chey (variable vaddu)
-        withSonarQubeEnv('MySonar') {
-            sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App'
-        }
+        // 1. Tool name matching with Jenkins Global Tool Configuration
+        dependencyCheck tool: 'OWASP-Check'
+        
+        // 2. Report generate cheyyadam
+        dependencyCheckPublisher pattern: 'target/dependency-check-report.xml'
     }
 }
-
-
 
 
         stage('Docker Build & Push') {
