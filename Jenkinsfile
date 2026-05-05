@@ -7,8 +7,7 @@ pipeline {
     }
 
     environment {
-        // SonarQube Details
-        SONAR_SERVER_NAME = 'SonarQube' 
+        
         
         // DockerHub Details
         DOCKER_HUB_USER = 'devpractice1'
@@ -39,12 +38,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
     steps {
-        // Direct ga single quotes lo SonarQube ani ivvandi (screenshot lo unna same name)
-        withSonarQubeEnv('SonarQube') {
+        // Direct ga 'MySonar' ane name use chey (variable vaddu)
+        withSonarQubeEnv('MySonar') {
             sh 'mvn sonar:sonar -Dsonar.projectKey=Maven-Web-App'
         }
     }
 }
+
 
 
 
