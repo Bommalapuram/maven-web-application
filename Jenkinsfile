@@ -49,5 +49,22 @@ pipeline {
                 }
             }
         }
+
+                stage('K8s Deployment') {
+            steps {
+                script {
+                    // 'k8s-config-file' anedi meeru Jenkins Credentials lo ichina ID
+                    withCredentials([file(credentialsId: 'k8s-config-file', variable: 'KUBECONFIG')]) {
+                        
+                        // IMAGE_NAME placeholder ni kotha build tag tho replace chesthunnam
+                        sh "sed -i 's|IMAGE_NAME|${DOCKER_IMAGE}:${env.BUILD_ID}|g' deployment.yaml"
+                        
+                        // Jenkins Build server nundi Deployment server ki commands pampisthunnam
+                        sh "kubectl --kubeconfig=${KUBECONFIG} apply -f deployment.yaml"
+                    }
+                }
+            }
+        }
+
     }
 }
