@@ -2,6 +2,71 @@ pipeline {
     agent any
 
     tools {
+        // Manage Jenkins > Tools lo Maven name 'maven-3' ani undali
+        maven 'maven-3'
+    }
+
+    environment {
+        DOCKER_IMAGE = "devpractice1/maven-web-application"
+        DOCKER_HUB_CREDS = "docker-hub-creds" // Jenkins Credentials ID
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Public repo kabatti credentials avasaram ledu
+                git 'https://github.com/Bommalapuram/maven-web-application.git'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                // Code compile ayyi target folder lo .war file create avthundi
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv('sonar-server') { 
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=maven-web-app"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    // Image ni build chesi version tag (${env.BUILD_ID}) tho push chesthunnam
+                    sh "docker build -t ${DOCKER_IMAGE}:${env.BUILD_ID} ."
+                    sh "docker tag ${DOCKER_IMAGE}:${env.BUILD_ID} ${DOCKER_IMAGE}:latest"
+                    
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "echo $PASS | docker login -u $USER --password-stdin"
+                        sh "docker push ${DOCKER_IMAGE}:${env.BUILD_ID}"
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+  /*
+pipeline {
+    agent any
+
+    tools {
         maven 'Maven3'   // Jenkins Tools lo meeru icchina Maven name
         jdk 'Java21'    // Jenkins Tools lo meeru icchina JDK name
     }
@@ -61,7 +126,7 @@ pipeline {
                 }
             }
         }
-
+ */
         // Kubernetes setup tarvata ee stage uncomment cheyyandi
         /*
         stage('K8s Deployment (EKS)') {
@@ -72,9 +137,9 @@ pipeline {
                 }
             }
         }
-        */
+        
     }
-
+*/
     post {
         always {
             echo "Build Finished."
